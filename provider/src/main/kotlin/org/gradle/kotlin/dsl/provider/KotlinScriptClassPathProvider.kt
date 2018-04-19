@@ -38,6 +38,7 @@ import org.gradle.kotlin.dsl.support.serviceOf
 import org.gradle.util.GFileUtils.moveFile
 
 import java.io.File
+import java.util.*
 
 
 fun gradleKotlinDslOf(project: Project): List<File> =
@@ -106,10 +107,19 @@ class KotlinScriptClassPathProvider(
         require(scope.isLocked) {
             "$scope must be locked before it can be used to compute a classpath!"
         }
-        val fullClassPath = getClasspath(scope.exportClassLoader)
-        val rootClassPath = getClasspath(scope.root.exportClassLoader)
+        val fullClassPath = exportClassPathOf(scope)
+        val rootClassPath = exportClassPathOf(scope.root)
         return fullClassPath - rootClassPath
     }
+
+    private
+    fun exportClassPathOf(scope: ClassLoaderScope) =
+        classPathByScope.computeIfAbsent(scope) {
+            getClasspath(it.exportClassLoader)
+        }
+
+    private
+    val classPathByScope = IdentityHashMap<ClassLoaderScope, ClassPath>()
 
     private
     fun gradleKotlinDslExtensions(): File =
